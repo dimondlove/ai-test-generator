@@ -27,6 +27,8 @@ repositories {
 extra["springAiVersion"] = "1.0.0-M5"
 
 dependencies {
+    // https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-parent
+    implementation("org.springframework.boot:spring-boot-starter-parent:3.4.1")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.ai:spring-ai-openai-spring-boot-starter")
     compileOnly("org.projectlombok:lombok")
