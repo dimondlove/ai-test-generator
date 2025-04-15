@@ -34,7 +34,7 @@ public class TestChatController {
     public ResponseEntity<ByteArrayResource> generateTest(@RequestParam("file") MultipartFile file) {
         try {
             String content = testChatService.extractText(file);
-            List<String> chunks = testChatService.splitText(content, 15000);
+            List<String> chunks = testChatService.splitText(content, 45000);
 
             StringBuilder allQuestions = new StringBuilder();
             StringBuilder allAnswers = new StringBuilder();
