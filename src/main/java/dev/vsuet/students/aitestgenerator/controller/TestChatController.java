@@ -63,7 +63,7 @@ public class TestChatController {
     }
 
     private String generateTestFromAI(String text) {
-        String prompt = "Сгенерируй следующий тест с вариантами ответа на 15 вопросов по следующему тексту лекции. Часть с ответами должна разделяться двумя пустыми строками, заголовком ###Ответы, двоеточием и пустой строкой:\n\n"
+        String prompt = "Сгенерируй следующий тест с вариантами ответа на 10 вопросов по следующему тексту лекции. Часть с ответами должна разделяться двумя пустыми строками, заголовком ###Ответы, двоеточием и пустой строкой:\n\n"
                 + text;
         String answer =  chatClient.prompt().user(prompt).call().content();
         System.out.println(answer);
