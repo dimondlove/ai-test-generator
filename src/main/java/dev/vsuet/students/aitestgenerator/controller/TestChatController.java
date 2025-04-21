@@ -1,5 +1,6 @@
 package dev.vsuet.students.aitestgenerator.controller;
 
+import dev.vsuet.students.aitestgenerator.model.QuestionData;
 import dev.vsuet.students.aitestgenerator.service.TestChatService;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.core.io.ByteArrayResource;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -36,20 +38,23 @@ public class TestChatController {
             String content = testChatService.extractText(file);
             List<String> chunks = testChatService.splitText(content, 45000);
 
-            StringBuilder allQuestions = new StringBuilder();
-            StringBuilder allAnswers = new StringBuilder();
+            int questionsPerChunk = Math.max(1, 10 / chunks.size());
+            List<QuestionData> allQuestions = new ArrayList<>();
 
-            for (String chunk : chunks) {
-                String response = generateTestFromAI(chunk);
-                String[] parts = response.split("\n\n### Ответы:\n", 2);
+            for (int i = 0; i < chunks.size(); i++) {
+                int remaining = 10 - allQuestions.size();
+                int count = (i == chunks.size() - 1) ? remaining : Math.min(questionsPerChunk, remaining);
+                if (count <= 0) break;
 
-                if (parts.length == 2) {
-                    allQuestions.append(parts[0]).append("\n\n");
-                    allAnswers.append(parts[1]).append("\n\n");
-                }
+                String jsonResponse = generateTestFromAI(chunks.get(i), count);
+                List<QuestionData> questions = testChatService.parseJson(jsonResponse);
+                allQuestions.addAll(questions);
             }
 
-            byte[] pdfBytes = testChatService.createPdf(allQuestions.toString(), allAnswers.toString());
+            if (allQuestions.size() > 10) {
+                allQuestions = allQuestions.subList(0, 10); // если случайно больше
+            }
+            byte[] pdfBytes = testChatService.createPdfFromJson(allQuestions);
             ByteArrayResource resource = new ByteArrayResource(pdfBytes);
 
             return ResponseEntity.ok()
@@ -62,9 +67,31 @@ public class TestChatController {
         }
     }
 
-    private String generateTestFromAI(String text) {
-        String prompt = "Сгенерируй следующий тест с вариантами ответа на 10 вопросов по следующему тексту лекции. Часть с ответами должна разделяться двумя пустыми строками, заголовком ###Ответы, двоеточием и пустой строкой:\n\n"
-                + text;
+    private String generateTestFromAI(String text, int count) {
+        String prompt = String.format("""
+            Ты - генератор тестов. Сгенерируй %d по тексту ниже.
+            Структура каждого вопроса:
+            "question": строка
+            "answers": массив из 4х вариантов
+            "correctAnswer": символ - правильный вариант ответа
+            Если в лекции не будет хватать информации  для не правильных вариантов ответа - бери из интернета.
+            
+            Верни результат в JSON-формате:
+            {
+              "questions": [
+                {
+                  "question": "...",
+                  "answers": ["А. ...", "Б. ...", "В. ...", "Г. ..."],
+                  "correctAnswer": "..."
+                }
+              ]
+            }
+            
+            Только не оборачивай ответ в Markdown.
+
+            Текст:
+            %s
+            """, count, text);
         String answer =  chatClient.prompt().user(prompt).call().content();
         System.out.println(answer);
         return answer;
