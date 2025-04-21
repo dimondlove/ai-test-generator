@@ -89,7 +89,7 @@ public class TestChatService {
                 QuestionData q = questions.get(i);
                 document.add(new Paragraph((i + 1) + ". " + q.getQuestion(), font));
                 for (String ans : q.getAnswers()) {
-                    document.add(new Paragraph(" - " + ans, font));
+                    document.add(new Paragraph(ans, font));
                 }
                 document.add(new Paragraph(" "));
             }
